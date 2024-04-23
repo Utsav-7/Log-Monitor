@@ -1,0 +1,23 @@
+Level,Count
+ERROR,24
+INFO,21
+DEBUG,16
+Level,Count
+/api/payment - ERROR,6
+/api/payment - INFO,3
+/api/payment - DEBUG,2
+/api/auth/login - ERROR,3
+/api/auth/login - INFO,1
+/api/auth/login - DEBUG,4
+/api/order - INFO,5
+/api/order - DEBUG,5
+/api/order - ERROR,5
+/api/inventory - INFO,3
+/api/inventory - DEBUG,1
+/api/inventory - ERROR,4
+/api/product - INFO,5
+/api/product - ERROR,4
+/api/product - DEBUG,3
+/api/admin/dashboard - INFO,4
+/api/admin/dashboard - DEBUG,1
+/api/admin/dashboard - ERROR,2
