@@ -1,4 +1,4 @@
-# Log-Monitor
+# Log Monitor
 
 This script monitors a Python application's log output in real-time, parsing and analyzing log messages to count occurrences of different log levels and error messages.
 
@@ -98,11 +98,13 @@ while True:
 - **Analysis and Reporting**:
     - If the `overall_analysis_count` reaches a overall analyze duration  (`OVERALL_ANALYSIS_DURATION`), the function calls `print_overall_analysis()` to print the analysis results and resets the counter.
     - If the `max_path_hit_analysis_count` reaches max API hit analyze duration (`MAX_PATH_HIT_ANALYSIS_DURATION`), it identifies the most frequently hit path using `find_most_hit_path(path_level_counts)` and prints a message indicating the most hit API in the last analysis duration.
+    - If the current time and last write has a certain time duration (here 1 hour) , the process of writing data to a CSV file will be done and csv file will be generated in current folder
 - **Error Handling**: The function includes error handling for keyboard interrupts (Ctrl+C) and other exceptions. On a keyboard interrupt, it stops the monitoring loop, prints a message, and terminates the subprocess. For other exceptions, it prints a warning message.
 
-```python
-# Function to start log monitoring
+```
 def monitor_application():
+    global level_counts, path_level_counts, last_write_time # Declare these as global
+
     try:
         # Start the application as a subprocess
         application_command = ["python", "app.py"]
@@ -113,6 +115,7 @@ def monitor_application():
         # Continuously read and analyse application's log messagess
         while True:
             line = application_process.stdout.readline().strip()
+            print("/////////////////////////////////////// LINE",line)
             if line:
                 parsed = parse_log_message(line.strip())
 
@@ -126,7 +129,7 @@ def monitor_application():
                     print("\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
                     warnings.warn("FAILED TO PARSE FOLLOWING LOG :", line)
                     print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-            
+
                 if (overall_analysis_count == OVERALL_ANALYSIS_DURATION):
                     # Print analysis results
                     print_overall_analysis()                    
@@ -137,6 +140,16 @@ def monitor_application():
                     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     print(f"MAXIMUM HITTED API IN LAST {MAX_PATH_HIT_ANALYSIS_DURATION} {DURATION_UNIT} IS : {max_hitted_path}")
                     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+                # Check if an hour has passed since the last write
+                current_time = datetime.datetime.now()
+                if (current_time - last_write_time).total_seconds() >= EXPORT_CSV_DURATION:
+                    write_to_csv(level_counts, path_level_counts)
+                    # Reset counters and update the last write time
+                    level_counts = {"info": 0, "debug": 0, "warning": 0}
+                    path_level_counts = {}
+                    last_write_time = current_time
+                    print('???????????????????????????????????????????')
 
     except KeyboardInterrupt:
         # Handle Ctrl+C to stop the monitoring loop
@@ -149,6 +162,35 @@ def monitor_application():
         warnings.warn(f"Error occurred: {e}")
 ```
 
+- **Writing to csv file :**
+    - write_to_csv() function writes two sets of data to a CSV file: a summary of counts by log level and a detailed breakdown of counts by path and log level. The use of `csv.DictWriter` makes it straightforward to write dictionaries to a CSV file, ensuring that the data is organized and easy to read
+    
+    ```
+    def write_to_csv(level_counts, path_level_counts):
+        # Create a filename based on the current time
+        filename = f"log_counts_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        with open(filename, 'w', newline='') as csvfile:
+            fieldnames = ['Level', 'Count']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            
+            writer.writeheader()
+            for level, count in level_counts.items():
+                writer.writerow({'Level': level, 'Count': count})
+            
+            # Write path-wise counts
+            writer.writeheader()
+            for path, counts in path_level_counts.items():
+                for level, count in counts.items():
+                    writer.writerow({'Level': f"{path} - {level}", 'Count': count})
+    ```
+    
+
 ## Performance Consideration
 
 - The code uses `readline()` to read the subprocess's output line by line, which is a common approach for real-time monitoring of subprocess output. This method ensures that the monitoring loop can process the output as it becomes available, without waiting for the subprocess to complete.
+
+## Future Work
+
+- In the I am planning to make another file named export which will generate parquet or another compressed file format of every log and uploaded on cloud based storage such aws s3 bucket.
+- Also want to upgrade the summary and exporting it into csv file every day and send email to respective person.
