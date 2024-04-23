@@ -115,7 +115,6 @@ def monitor_application():
         # Continuously read and analyse application's log messagess
         while True:
             line = application_process.stdout.readline().strip()
-            print("/////////////////////////////////////// LINE",line)
             if line:
                 parsed = parse_log_message(line.strip())
 
@@ -149,7 +148,6 @@ def monitor_application():
                     level_counts = {"info": 0, "debug": 0, "warning": 0}
                     path_level_counts = {}
                     last_write_time = current_time
-                    print('???????????????????????????????????????????')
 
     except KeyboardInterrupt:
         # Handle Ctrl+C to stop the monitoring loop
